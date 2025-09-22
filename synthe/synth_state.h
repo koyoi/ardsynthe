@@ -41,15 +41,23 @@ constexpr float ANALOG_MAX_VALUE = 4095.0f;
 constexpr float ANALOG_MAX_VALUE = 1023.0f;
 #endif
 
+#if defined(KEYBOARD_DRIVER_MCP23017)
 constexpr uint8_t MCP_KEYBOARD_ADDR = 0x20;
+#endif
 constexpr uint8_t MCP_SWITCH_ADDR = 0x21;
 
+#if defined(KEYBOARD_DRIVER_MCP23017)
 extern Adafruit_MCP23X17 keyboardExpander;
+#endif
 extern Adafruit_MCP23X17 switchExpander;
 
+#if defined(KEYBOARD_DRIVER_TTP229)
+constexpr uint8_t KEY_COUNT = TTP229_KEY_COUNT;
+#else
 constexpr uint8_t KEY_COLS = 5;
 constexpr uint8_t KEY_ROWS = 5;
 constexpr uint8_t KEY_COUNT = KEY_COLS * KEY_ROWS;
+#endif
 extern const uint8_t keyMidiNotes[KEY_COUNT];
 
 enum ControlSwitch {

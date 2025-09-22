@@ -9,6 +9,32 @@
 namespace {
 uint8_t lastKeyState[KEY_COUNT];
 
+#if defined(KEYBOARD_DRIVER_TTP229)
+uint16_t readTtp229State() {
+  static_assert(KEY_COUNT <= 16, "TTP229 は最大16キーまでサポートします");
+  uint16_t state = 0;
+
+  // SCL をハイにしてから 1 サイクル分のディレイを入れる
+  digitalWrite(TTP229_SCL_PIN, HIGH);
+  delayMicroseconds(TTP229_CLOCK_DELAY_US);
+
+  for (uint8_t index = 0; index < KEY_COUNT; ++index) {
+    digitalWrite(TTP229_SCL_PIN, LOW);
+    delayMicroseconds(TTP229_CLOCK_DELAY_US);
+
+    bool active = digitalRead(TTP229_SDO_PIN) == TTP229_ACTIVE_STATE;
+    if (active) {
+      state |= (static_cast<uint16_t>(1) << index);
+    }
+
+    digitalWrite(TTP229_SCL_PIN, HIGH);
+    delayMicroseconds(TTP229_CLOCK_DELAY_US);
+  }
+
+  return state;
+}
+#endif
+
 float readNormalizedPot(uint8_t pin) {
   uint16_t value = mozziAnalogRead(pin);
   return static_cast<float>(value) / ANALOG_MAX_VALUE;
@@ -16,6 +42,13 @@ float readNormalizedPot(uint8_t pin) {
 }
 
 void setupKeyboardExpander() {
+#if defined(KEYBOARD_DRIVER_TTP229)
+  pinMode(TTP229_SCL_PIN, OUTPUT);
+  pinMode(TTP229_SDO_PIN, INPUT);
+  digitalWrite(TTP229_SCL_PIN, HIGH);
+
+  memset(lastKeyState, 0, sizeof(lastKeyState));
+#else
   // キーボード用I2Cエキスパンダ初期化
   // 引数: なし
   // 説明: MCP23017 をキーボード行列用に設定し、行/列ピンの入出力を構成します。
@@ -32,9 +65,23 @@ void setupKeyboardExpander() {
   }
 
   memset(lastKeyState, 0, sizeof(lastKeyState));
+#endif
 }
 
 void scanKeyboard() {
+#if defined(KEYBOARD_DRIVER_TTP229)
+  uint16_t state = readTtp229State();
+
+  for (uint8_t index = 0; index < KEY_COUNT; ++index) {
+    bool pressed = (state & (static_cast<uint16_t>(1) << index)) != 0;
+    if (pressed && !lastKeyState[index]) {
+      handleNoteOn(keyMidiNotes[index]);
+    } else if (!pressed && lastKeyState[index]) {
+      handleNoteOff(keyMidiNotes[index]);
+    }
+    lastKeyState[index] = pressed;
+  }
+#else
   // キーボードスキャン
   // 引数: なし
   // 説明: 各列を順に LOW にして行の入力を読み取り、状態変化があれば
@@ -57,6 +104,7 @@ void scanKeyboard() {
     }
     keyboardExpander.digitalWrite(col, HIGH);
   }
+#endif
 }
 
 void setupSwitchExpander() {

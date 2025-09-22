@@ -13,9 +13,9 @@
 // ============================================================
 //  Synth configuration for STM32F103 (Blue Pill) with Mozzi
 // ============================================================
-//  * Two MCP23017 I2C port expanders are used
-//      - Keyboard matrix (up to 25 keys for a little more than 2 octaves)
-//      - Control switches (6 tactile switches)
+//  * Keyboard input can be switched at build time between an MCP23017 matrix
+//    expander (25-key matrix) or a TTP229 capacitive keypad via `config.h`
+//  * One MCP23017 I2C port expander is used for control switches (6 tactile switches)
 //  * Six analog pots (VR) provide oscillator morphing, envelope (ASR),
 //    filter cutoff/resonance, LFO rate/depth etc.
 //  * Serial MIDI input on Serial1 (31250 bps)
