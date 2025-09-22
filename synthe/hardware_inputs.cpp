@@ -16,6 +16,11 @@ float readNormalizedPot(uint8_t pin) {
 }
 
 void setupKeyboardExpander() {
+  // キーボード用I2Cエキスパンダ初期化
+  // 引数: なし
+  // 説明: MCP23017 をキーボード行列用に設定し、行/列ピンの入出力を構成します。
+  // 戻り値: なし
+  // 副作用: エキスパンダのピンモードと状態を設定する。
   keyboardExpander.begin_I2C(MCP_KEYBOARD_ADDR);
 
   for (uint8_t col = 0; col < KEY_COLS; ++col) {
@@ -30,6 +35,12 @@ void setupKeyboardExpander() {
 }
 
 void scanKeyboard() {
+  // キーボードスキャン
+  // 引数: なし
+  // 説明: 各列を順に LOW にして行の入力を読み取り、状態変化があれば
+  //   `handleNoteOn` / `handleNoteOff` を呼び出します。
+  // 戻り値: なし
+  // 副作用: キーノートのオン/オフイベントを発生させる。
   for (uint8_t col = 0; col < KEY_COLS; ++col) {
     keyboardExpander.digitalWrite(col, LOW);
     delayMicroseconds(5);
@@ -49,6 +60,11 @@ void scanKeyboard() {
 }
 
 void setupSwitchExpander() {
+  // スイッチ用 I2C エキスパンダ初期化
+  // 引数: なし
+  // 説明: MCP23017 をスイッチ（タクトスイッチ）用に設定します。
+  // 戻り値: なし
+  // 副作用: エキスパンダのピンモードを INPUT_PULLUP に設定する。
   switchExpander.begin_I2C(MCP_SWITCH_ADDR);
   for (uint8_t i = 0; i < 8; ++i) {
     switchExpander.pinMode(i, INPUT_PULLUP);
@@ -56,6 +72,12 @@ void setupSwitchExpander() {
 }
 
 void readSwitches() {
+  // スイッチ読み取りおよび押下イベント処理
+  // 引数: なし
+  // 説明: 各スイッチの状態を読み、押下エッジを検出したら対応する操作
+  //   （録音、再生、クリア、ホールド、同期、ランダム）を実行します。
+  // 戻り値: なし
+  // 副作用: グローバルな sequencer 状態やノート状態を更新する。
   bool recordPressed = !switchExpander.digitalRead(SWITCH_RECORD);
   bool playPressed = !switchExpander.digitalRead(SWITCH_PLAY);
   bool clearPressed = !switchExpander.digitalRead(SWITCH_CLEAR);
@@ -110,6 +132,11 @@ void readSwitches() {
 }
 
 void readAnalogs() {
+  // アナログ入力読み取り
+  // 引数: なし
+  // 説明: 各ポットから正規化値を読み、パラメータ（モーフ、エンベロープ、フィルタ等）に反映します。
+  // 戻り値: なし
+  // 副作用: `params` と関連するエンベロープ/LFO の設定を更新する。
   params.waveMorph = readNormalizedPot(analogPins[0]) * 4.0f;
   params.envAttack = 5.0f + 500.0f * readNormalizedPot(analogPins[1]);
   params.envSustain = readNormalizedPot(analogPins[2]);

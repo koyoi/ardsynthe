@@ -73,6 +73,17 @@ extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoFilter;
 extern ADSR<CONTROL_RATE, AUDIO_RATE> envelope;
 extern LowPassFilter filter;
 
+/**
+ * @brief グローバルなシンセパラメータ構造体
+ */
 extern SynthParams params;
+
+/**
+ * @brief 現在の（出力に使われている）周波数（Hz）
+ */
 extern float currentFreq;
+
+/**
+ * @brief 目標周波数（Hz）。スムージングされて `currentFreq` に適用される。
+ */
 extern float targetFreq;

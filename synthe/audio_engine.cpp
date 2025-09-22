@@ -14,6 +14,12 @@ constexpr uint16_t CLICK_LENGTH = (AUDIO_RATE / 400) ? (AUDIO_RATE / 400) : 1;
 volatile uint16_t clickSamplesRemaining = 0;
 
 int16_t computeWaveSample() {
+  // 波形選択・ブレンドを行い最終波形サンプルを計算する
+  // 引数: なし
+  // 説明: 4 種類のオシレーター（sin, tri, saw, square/pulse）から現在のモーフ位置に
+  //   基づき2波形を線形補間して出力を決定します。
+  // 戻り値: 16ビット波形サンプル（-32768..32767）
+  // 副作用: なし（オシレーターの next() を呼ぶ副作用はオシレーター内部に限定される）
   int16_t sinSample = oscSin.next();
   int16_t triSample = oscTri.next();
   int16_t sawSample = oscSaw.next();
@@ -50,10 +56,21 @@ int16_t computeWaveSample() {
 }
 
 void triggerClick() {
+  // クリック音をトリガーする（UI の再生クリック用）
+  // 引数: なし
+  // 説明: クリック用のサンプル残数をセットし、次回のオーディオ更新でクリックを付加させます。
+  // 戻り値: なし
+  // 副作用: `clickSamplesRemaining` を変更する。
   clickSamplesRemaining = CLICK_LENGTH;
 }
 
 AudioOutput updateAudio() {
+  // オーディオフレームの生成
+  // 引数: なし
+  // 説明: 現在の目標周波数へスムーズに追従させ、波形生成、エンベロープ、LFO、フィルタ処理を適用して
+  //   最終的な 16bit サンプルを返します。また、FFT 用のサンプルをバッファへプッシュします。
+  // 戻り値: AudioOutput（モノラル）
+  // 副作用: グローバル状態（currentFreq, oscの位相, envelope, filter など）を進める。
   float freqDiff = targetFreq - currentFreq;
   currentFreq += freqDiff * 0.02f;
 
@@ -91,6 +108,12 @@ AudioOutput updateAudio() {
 }
 
 void updateControl() {
+  // コントロールレートごとの更新処理
+  // 引数: なし
+  // 説明: アナログ入力・キーボード・スイッチ・MIDI・シーケンサなどの入力を処理し、
+  //   表示更新と FFT 計算を順次呼び出します。
+  // 戻り値: なし
+  // 副作用: 多数のグローバル状態を更新する（params, sequencer, display, FFT バッファ等）。
   readAnalogs();
   scanKeyboard();
   readSwitches();

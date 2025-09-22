@@ -102,6 +102,14 @@ void finalizeSequence() {
 }  // namespace
 
 void handleNoteOn(uint8_t note) {
+  // ノートオン処理
+  // 引数:
+  //   note: MIDIノート番号
+  // 説明:
+  //   キー保持リストにノートを追加し、ターゲット周波数を更新してエンベロープを開始します。
+  //   シーケンサが録音中であればイベントバッファに記録します。
+  // 戻り値: なし
+  // 副作用: グローバルな synth 状態（targetFreq, envelope, sequenceBuffer 等）を更新する。
   pushHeld(note);
   targetFreq = midiToFreq(static_cast<float>(note) + params.pitchOffset);
   envelope.noteOn();
@@ -112,6 +120,14 @@ void handleNoteOn(uint8_t note) {
 }
 
 void handleNoteOff(uint8_t note) {
+  // ノートオフ処理
+  // 引数:
+  //   note: MIDIノート番号
+  // 説明:
+  //   保持リストからノートを削除し、必要に応じてエンベロープをオフにします。
+  //   録音中であればノートオフイベントを記録します。
+  // 戻り値: なし
+  // 副作用: グローバルな synth 状態を更新する。
   popHeld(note);
   if (sequencerRecording && sequenceLength < MAX_SEQ_EVENTS) {
     sequenceBuffer[sequenceLength++] = {note, false, millis() - recordStartMs};
@@ -125,6 +141,11 @@ void handleNoteOff(uint8_t note) {
 }
 
 void clearSequence() {
+  // シーケンスをクリアする
+  // 引数: なし
+  // 説明: 再生中のノートをすべてオフにして、シーケンスバッファと再生マーカーをリセットします。
+  // 戻り値: なし
+  // 副作用: sequenceLength, sequenceDuration, playbackIndex などをリセットする。
   clearActiveSequencerNotes();
   sequenceLength = 0;
   sequenceDuration = 0;
@@ -133,6 +154,11 @@ void clearSequence() {
 }
 
 void beginRecording() {
+  // 録音開始
+  // 引数: なし
+  // 説明: 現在の再生を停止してシーケンスをクリアし、録音モードに入ります。
+  // 戻り値: なし
+  // 副作用: sequencerRecording を true にして記録開始時刻を保存する。
   sequencerPlaying = false;
   sequencerRecording = false;
   clearSequence();
@@ -141,6 +167,11 @@ void beginRecording() {
 }
 
 void endRecording() {
+  // 録音終了
+  // 引数: なし
+  // 説明: 録音モードを終了し、録音されたシーケンスがあれば最終化処理を行います。
+  // 戻り値: なし
+  // 副作用: sequencerRecording を false にする。
   sequencerRecording = false;
   if (sequenceLength > 0) {
     finalizeSequence();
@@ -148,6 +179,11 @@ void endRecording() {
 }
 
 void startPlayback() {
+  // 再生開始
+  // 引数: なし
+  // 説明: シーケンスが存在する場合、再生モードに入り再生マーカーを初期化します。
+  // 戻り値: なし
+  // 副作用: sequencerPlaying を true にする。
   if (sequenceLength == 0) {
     return;
   }
@@ -157,17 +193,32 @@ void startPlayback() {
 }
 
 void stopPlayback() {
+  // 再生停止
+  // 引数: なし
+  // 説明: 再生モードを終了し、再生インデックスをリセットします。
+  // 戻り値: なし
+  // 副作用: sequencerPlaying を false にする。
   sequencerPlaying = false;
   playbackIndex = 0;
 }
 
 void resetPlaybackMarkers() {
+  // 再生マーカーをリセット
+  // 引数: なし
+  // 説明: 再生位置と開始時刻を現在に合わせ、再生中のノートをクリアします。
+  // 戻り値: なし
+  // 副作用: playbackIndex と playbackStartMs を更新する。
   playbackIndex = 0;
   playbackStartMs = millis();
   clearActiveSequencerNotes();
 }
 
 void updateSequencer() {
+  // シーケンサの定期更新
+  // 引数: なし
+  // 説明: 再生中であれば経過時間に基づいてシーケンスイベントを発火します。
+  // 戻り値: なし
+  // 副作用: ノートのオン/オフを実行し、再生位置を進める。
   if (!sequencerPlaying || sequenceLength == 0) {
     return;
   }

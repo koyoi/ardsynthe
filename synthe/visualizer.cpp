@@ -19,6 +19,16 @@ int16_t waveformBuffer[FFT_SAMPLES];
 volatile uint16_t waveformWriteIndex = 0;
 
 void renderWaveform(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+  // 描画用波形レンダラー
+  // 引数:
+  //   x, y: フレームの左上座標（ピクセル）
+  //   width, height: フレームの幅と高さ（ピクセル）
+  // 説明:
+  //   内部バッファ `waveformBuffer` から波形サンプルを読み取り、指定領域内に波形をプロットします。
+  //   バッファは環状で書き込みインデックス `waveformWriteIndex` により最新位置が管理されています。
+  // 戻り値: なし
+  // 副作用: ディスプレイにピクセルを描画する（`display` に依存）。
+  // 注意: width が大きい場合はサンプルを間引いて表示します（パフォーマンスと表示密度の両立）。
   display.drawFrame(x, y, width, height);
   uint8_t step = max<uint8_t>(1, FFT_SAMPLES / width);
   uint16_t baseIndex = waveformWriteIndex;
@@ -32,6 +42,16 @@ void renderWaveform(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
 }
 
 void renderSpectrum(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+  // スペクトラム（周波数成分）レンダラー
+  // 引数:
+  //   x, y: フレームの左上座標（ピクセル）
+  //   width, height: フレームの幅と高さ（ピクセル）
+  // 説明:
+  //   FFT の計算結果（`fftReal` に格納された振幅）を縦棒グラフとして描画します。
+  //   対数スケール（log10(1 + magnitude)）で高さを決め、表示領域に収まるよう制限します。
+  // 戻り値: なし
+  // 副作用: ディスプレイにラインを描画する。
+  // 注意: FFT は別関数 `computeFFT()` により更新されるため、本関数は描画のみを担当します。
   display.drawFrame(x, y, width, height);
   uint8_t bins = min<uint8_t>(width - 2, FFT_SAMPLES / 2);
   for (uint8_t i = 0; i < bins; ++i) {
@@ -44,6 +64,15 @@ void renderSpectrum(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
 }
 
 void updateDisplay() {
+  // メインディスプレイ更新関数
+  // 引数: なし
+  // 説明:
+  //   各種パラメータ（周波数、モーフ、フィルタ、エンベロープ、シーケンサ状態）を表示し、
+  //   波形とスペクトラムの描画を行った後、バッファをディスプレイへ送信します。
+  //   更新レートは約50ms 毎に制限されています（フレームレート抑制）。
+  // 戻り値: なし
+  // 副作用: 表示バッファのクリア・描画・送信を行う。
+  // 注意: この関数は UI 更新を行うのみで、FFT の計算や波形サンプルの収集は別関数で行われます。
   static uint32_t lastUpdate = 0;
   uint32_t now = millis();
   if (now - lastUpdate < 50) {
@@ -95,11 +124,29 @@ void updateDisplay() {
 }
 
 void pushSampleForFFT(int16_t sample) {
+  // 波形サンプルを FFT 用環状バッファに追加する
+  // 引数:
+  //   sample: 16ビットPCM相当の波形サンプル（-32768..32767）
+  // 説明:
+  //   呼び出されると最新のサンプルが `waveformBuffer` に格納され、書き込みインデックスが進みます。
+  // 戻り値: なし
+  // 副作用: グローバルバッファを書き換える。割り込みコンテキストから呼ぶ可能性がある場合は
+  //   `waveformWriteIndex` が volatile として定義されているため原子性に注意。
   waveformBuffer[waveformWriteIndex] = sample;
   waveformWriteIndex = (waveformWriteIndex + 1) % FFT_SAMPLES;
 }
 
 void computeFFT() {
+  // FFT を計算して振幅スペクトルを更新する
+  // 引数: なし
+  // 説明:
+  //   内部の波形環状バッファから一定数（FFT_SAMPLES）分のサンプルを取り出し、
+  //   arduinoFFT ライブラリで窓関数・FFT・複素数からの振幅変換を行い、結果を `fftReal` に格納します。
+  //   実行間隔は約100ms に制限されています。
+  // 戻り値: なし
+  // 副作用: `fftReal` / `fftImag` を上書きする。
+  // 注意: 呼び出し元が定期的に呼ぶことを想定。データ取り出し時に `waveformWriteIndex` が更新される
+  //   可能性があるため、正確な位相/時間整合が必要ならロックを検討してください。
   static uint32_t lastFFT = 0;
   uint32_t now = millis();
   if (now - lastFFT < 100) {

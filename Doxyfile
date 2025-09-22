@@ -1,0 +1,25 @@
+# Doxyfile minimal config for ardsynthe
+PROJECT_NAME           = "ardsynthe"
+PROJECT_BRIEF          = "Arduino ベースのシンセサイザプロジェクト"
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = NO
+OUTPUT_LANGUAGE        = Japanese
+INPUT                  = synthe
+FILE_PATTERNS          = *.h *.hpp *.c *.cpp *.ino
+RECURSIVE              = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HTML_OUTPUT            = html
+QUIET                  = NO
+WARNINGS               = YES
+GENERATE_TREEVIEW      = YES
+
+# Enable source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = YES
+
+# Use UTF-8 for output
+OUTPUT_ENCODING        = UTF-8
