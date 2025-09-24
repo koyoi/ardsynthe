@@ -9,11 +9,11 @@
 
 namespace {
 constexpr uint16_t FFT_SAMPLES = 128;
-constexpr float FFT_SAMPLE_RATE = AUDIO_RATE;
+constexpr double FFT_SAMPLE_RATE = static_cast<double>(AUDIO_RATE);
 
 double fftReal[FFT_SAMPLES];
 double fftImag[FFT_SAMPLES];
-arduinoFFT FFT(fftReal, fftImag, FFT_SAMPLES, FFT_SAMPLE_RATE);
+ArduinoFFT<double> FFT(fftReal, fftImag, FFT_SAMPLES, FFT_SAMPLE_RATE);
 
 int16_t waveformBuffer[FFT_SAMPLES];
 volatile uint16_t waveformWriteIndex = 0;
@@ -84,7 +84,15 @@ void updateDisplay() {
   display.setFont(u8g2_font_5x8_tr);
   display.setCursor(0, 8);
   display.print("Freq:");
-  display.print(static_cast<int>(currentFreq));
+  // ポリフォニー対応: 活動中のボイスから表示周波数を決定する（最初のアクティブボイスを表示）
+  int displayFreq = 0;
+  for (uint8_t i = 0; i < POLY_VOICES; ++i) {
+    if (voiceActive[i]) {
+      displayFreq = static_cast<int>(voiceCurrentFreq[i]);
+      break;
+    }
+  }
+  display.print(displayFreq);
   display.print("Hz");
 
   display.setCursor(0, 16);
@@ -161,7 +169,7 @@ void computeFFT() {
     fftImag[i] = 0.0;
   }
 
-  FFT.Windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-  FFT.Compute(FFT_FORWARD);
-  FFT.ComplexToMagnitude();
+  FFT.windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+  FFT.compute(FFT_FORWARD);
+  FFT.complexToMagnitude();
 }

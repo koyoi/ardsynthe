@@ -102,17 +102,20 @@ void finalizeSequence() {
 }  // namespace
 
 void handleNoteOn(uint8_t note) {
-  // ノートオン処理
-  // 引数:
-  //   note: MIDIノート番号
-  // 説明:
-  //   キー保持リストにノートを追加し、ターゲット周波数を更新してエンベロープを開始します。
-  //   シーケンサが録音中であればイベントバッファに記録します。
-  // 戻り値: なし
-  // 副作用: グローバルな synth 状態（targetFreq, envelope, sequenceBuffer 等）を更新する。
+  // ポリフォニー対応ノートオン処理
+  // 動作: 空きボイスを探して割り当て、対応する voiceTargetFreq とエンベロープをトリガーする。
   pushHeld(note);
-  targetFreq = midiToFreq(static_cast<float>(note) + params.pitchOffset);
-  envelope.noteOn();
+  // 単純なボイスアロケータ: 空きボイスを探すか、最初のボイスを奪う
+  int8_t slot = -1;
+  for (uint8_t i = 0; i < POLY_VOICES; ++i) {
+    if (!voiceActive[i]) { slot = i; break; }
+  }
+  if (slot == -1) slot = 0;
+  voiceNote[slot] = note;
+  voiceTargetFreq[slot] = midiToFreq(static_cast<float>(note) + params.pitchOffset);
+  voiceActive[slot] = true;
+  // トリガー: 各ボイスの ADSR に対して noteOn
+  envelopeInstance[slot].noteOn();
 
   if (sequencerRecording && sequenceLength < MAX_SEQ_EVENTS) {
     sequenceBuffer[sequenceLength++] = {note, true, millis() - recordStartMs};
@@ -120,24 +123,23 @@ void handleNoteOn(uint8_t note) {
 }
 
 void handleNoteOff(uint8_t note) {
-  // ノートオフ処理
-  // 引数:
-  //   note: MIDIノート番号
-  // 説明:
-  //   保持リストからノートを削除し、必要に応じてエンベロープをオフにします。
-  //   録音中であればノートオフイベントを記録します。
-  // 戻り値: なし
-  // 副作用: グローバルな synth 状態を更新する。
+  // ポリフォニー対応ノートオフ処理
   popHeld(note);
   if (sequencerRecording && sequenceLength < MAX_SEQ_EVENTS) {
     sequenceBuffer[sequenceLength++] = {note, false, millis() - recordStartMs};
   }
 
-  if (heldCount == 0) {
-    envelope.noteOff();
-  } else {
-    targetFreq = midiToFreq(static_cast<float>(currentHeldNote()) + params.pitchOffset);
+  // ノート番号に割り当てられたボイスを探索してリリースする
+  for (uint8_t i = 0; i < POLY_VOICES; ++i) {
+    if (voiceActive[i] && voiceNote[i] == note) {
+      // ADSR をオフにしてボイスを非アクティブにする（発音の終了は ADSR に依存）
+  envelopeInstance[i].noteOff();
+      voiceActive[i] = false;
+      break;
+    }
   }
+
+  // もう保持ノートが無ければ（全て解放状態）、追加の処理は不要
 }
 
 void clearSequence() {
@@ -271,7 +273,10 @@ void abortRecording() {
 
 void releaseAllHeldNotes() {
   if (heldCount > 0) {
-    envelope.noteOff();
+    for (uint8_t i = 0; i < POLY_VOICES; ++i) {
+      envelopeInstance[i].noteOff();
+      voiceActive[i] = false;
+    }
     heldCount = 0;
   }
 }

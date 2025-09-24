@@ -3,7 +3,7 @@
 #include "sequencer.h"
 #include "synth_state.h"
 
-#include <MozziGuts.h>
+#include <Mozzi.h>
 #include <string.h>
 
 namespace {
@@ -192,10 +192,13 @@ void readAnalogs() {
   params.filterCutoff = 200.0f + 3200.0f * readNormalizedPot(analogPins[4]);
   params.filterResonance = 0.1f + 0.85f * readNormalizedPot(analogPins[5]);
 
-  envelope.setAttack(params.envAttack);
-  envelope.setDecay(0);
-  envelope.setSustain(static_cast<uint8_t>(params.envSustain * 255.0f));
-  envelope.setRelease(params.envRelease);
+  // 各ボイスのエンベロープ設定を更新
+  for (uint8_t i = 0; i < POLY_VOICES; ++i) {
+    envelopeInstance[i].setAttackTime(static_cast<unsigned int>(params.envAttack));
+    envelopeInstance[i].setDecayTime(0);
+    envelopeInstance[i].setSustainLevel(static_cast<uint8_t>(params.envSustain * 255.0f));
+    envelopeInstance[i].setReleaseTime(static_cast<unsigned int>(params.envRelease));
+  }
 
   lfoPitch.setFreq(params.lfoRate);
   lfoFilter.setFreq(params.lfoRate * 0.75f);

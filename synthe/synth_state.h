@@ -3,9 +3,9 @@
 #include "config.h"
 
 #include <Arduino.h>
+#include <Mozzi.h>
 #include <Adafruit_MCP23X17.h>
 #include <LowPassFilter.h>
-#include <Mozzi.h>
 #include <Oscil.h>
 #include <Phasor.h>
 #include <U8g2lib.h>
@@ -71,27 +71,31 @@ enum ControlSwitch {
 
 extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C display;
 
-extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> oscSin;
-extern Oscil<TRIANGLE2048_NUM_CELLS, AUDIO_RATE> oscTri;
-extern Oscil<SAW2048_NUM_CELLS, AUDIO_RATE> oscSaw;
-extern Oscil<SQUARE_NO_ALIAS_2048_NUM_CELLS, AUDIO_RATE> oscSquare;
-extern Phasor<AUDIO_RATE> pulsePhasor;
-extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoPitch;
-extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoFilter;
-extern ADSR<CONTROL_RATE, AUDIO_RATE> envelope;
-extern LowPassFilter filter;
-
 /**
  * @brief グローバルなシンセパラメータ構造体
  */
 extern SynthParams params;
+// ポリフォニーボイス数
+constexpr uint8_t POLY_VOICES = 4;
 
-/**
- * @brief 現在の（出力に使われている）周波数（Hz）
- */
-extern float currentFreq;
+// 各ボイスごとのオシレータ/フェーズ/エンベロープ/フィルタは静的確保されます。
+// 各配列の実体は synth_state.cpp に定義されています。
+extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> oscSin[POLY_VOICES];
+extern Oscil<TRIANGLE2048_NUM_CELLS, AUDIO_RATE> oscTri[POLY_VOICES];
+extern Oscil<SAW2048_NUM_CELLS, AUDIO_RATE> oscSaw[POLY_VOICES];
+extern Oscil<SQUARE_NO_ALIAS_2048_NUM_CELLS, AUDIO_RATE> oscSquare[POLY_VOICES];
+extern Phasor<AUDIO_RATE> pulsePhasor[POLY_VOICES];
 
-/**
- * @brief 目標周波数（Hz）。スムージングされて `currentFreq` に適用される。
- */
-extern float targetFreq;
+// グローバル LFO（共有）
+extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoPitch;
+extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoFilter;
+
+// 各ボイスのエンベロープ/フィルタはポインタで扱う
+extern ADSR<CONTROL_RATE, AUDIO_RATE> envelopeInstance[POLY_VOICES];
+extern LowPassFilter filterInstance[POLY_VOICES];
+
+// グローバルパラメータとボイス状態
+extern float voiceCurrentFreq[POLY_VOICES];
+extern float voiceTargetFreq[POLY_VOICES];
+extern bool voiceActive[POLY_VOICES];
+extern uint8_t voiceNote[POLY_VOICES];
