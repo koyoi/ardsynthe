@@ -35,7 +35,7 @@ void triggerClick() {
   clickSamplesRemaining = CLICK_LENGTH;
 }
 
-AudioOutput_t updateAudio() {
+AudioOutput updateAudio() {
   // オーディオフレームの生成
   // 引数: なし
   // 説明: 現在の目標周波数へスムーズに追従させ、波形生成、エンベロープ、LFO、フィルタ処理を適用して

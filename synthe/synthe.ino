@@ -54,7 +54,7 @@ void setup() {
   lfoPitch.setFreq(params.lfoRate);
   lfoFilter.setFreq(params.lfoRate * 0.75f);
 
-  startMozzi(CONTROL_RATE);
+  startMozzi(MOZZI_CONTROL_RATE);
 }
 
 void loop() {

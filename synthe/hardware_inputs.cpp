@@ -3,7 +3,9 @@
 #include "sequencer.h"
 #include "synth_state.h"
 
-#include <Mozzi.h>
+#define MOZZI_ANALOG_READ_RESOLUTION 12
+
+#include <MozziHeadersOnly.h>
 #include <string.h>
 
 namespace {

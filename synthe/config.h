@@ -1,7 +1,7 @@
 #pragma once
 
 #define AUDIO_MODE STANDARD_PLUS
-#define CONTROL_RATE 128
+#define MOZZI_CONTROL_RATE 128
 
 // ============================================================================
 //  Input hardware selection

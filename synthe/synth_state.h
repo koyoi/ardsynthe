@@ -3,9 +3,9 @@
 #include "config.h"
 
 #include <Arduino.h>
-#include <Mozzi.h>
+#include <MozziHeadersOnly.h>
 #include <Adafruit_MCP23X17.h>
-#include <LowPassFilter.h>
+#include <ResonantFilter.h>
 #include <Oscil.h>
 #include <Phasor.h>
 #include <U8g2lib.h>
