@@ -50,17 +50,34 @@ AudioOutput updateAudio() {
     float freqDiff = voiceTargetFreq[v] - voiceCurrentFreq[v];
     voiceCurrentFreq[v] += freqDiff * 0.02f;
 
-  // 各ボイスのオシレータ周波数を設定
+#if defined(FAST_OSC_USE)
+  fastOscSin[v].setFreq(voiceCurrentFreq[v]);
+  fastOscTri[v].setFreq(voiceCurrentFreq[v]);
+  fastOscSaw[v].setFreq(voiceCurrentFreq[v]);
+  fastOscSquare[v].setFreq(voiceCurrentFreq[v]);
+#else
   oscSin[v].setFreq(voiceCurrentFreq[v]);
   oscTri[v].setFreq(voiceCurrentFreq[v]);
   oscSaw[v].setFreq(voiceCurrentFreq[v]);
   oscSquare[v].setFreq(voiceCurrentFreq[v]);
+#endif
   pulsePhasor[v].setFreq(voiceCurrentFreq[v]);
 
+#if defined(FAST_OSC_USE)
+  auto nextFastSample = [](FastOsc<AUDIO_RATE>& osc) -> int16_t {
+    return static_cast<int16_t>(osc.next() * 127.0f);
+  };
+
+  int16_t sinSample = nextFastSample(fastOscSin[v]);
+  int16_t triSample = nextFastSample(fastOscTri[v]);
+  int16_t sawSample = nextFastSample(fastOscSaw[v]);
+  int16_t squareSample = nextFastSample(fastOscSquare[v]);
+#else
   int16_t sinSample = oscSin[v].next();
   int16_t triSample = oscTri[v].next();
   int16_t sawSample = oscSaw[v].next();
   int16_t squareSample = oscSquare[v].next();
+#endif
 
     float morph = constrain(params.waveMorph, 0.0f, 4.0f);
     int region = static_cast<int>(morph);
@@ -93,9 +110,18 @@ AudioOutput updateAudio() {
   int16_t envVal = envelopeInstance[v].next();
     int16_t amplitude = (baseSample * envVal) >> 8;
 
-    int16_t lfoPitchOffset = (lfoPitch.next() * params.lfoDepthPitch) / 128.0f;
+    float lfoPitchValue;
+    float lfoFilterValue;
+#if defined(FAST_OSC_USE)
+    lfoPitchValue = lfoPitch.next() * 127.0f;
+    lfoFilterValue = lfoFilter.next() * 127.0f;
+#else
+    lfoPitchValue = static_cast<float>(lfoPitch.next());
+    lfoFilterValue = static_cast<float>(lfoFilter.next());
+#endif
+    float lfoPitchOffset = (lfoPitchValue * params.lfoDepthPitch) / 128.0f;
     float pitchFactor = powf(2.0f, lfoPitchOffset / 12.0f);
-    float modulatedCutoff = params.filterCutoff + (lfoFilter.next() * params.lfoDepthFilter) / 128.0f;
+    float modulatedCutoff = params.filterCutoff + (lfoFilterValue * params.lfoDepthFilter) / 128.0f;
     modulatedCutoff = constrain(modulatedCutoff, 40.0f, 5000.0f);
 
   filterInstance[v].setCutoffFreqAndResonance(modulatedCutoff * pitchFactor, params.filterResonance);

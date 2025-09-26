@@ -63,8 +63,30 @@ Oscil<SQUARE_NO_ALIAS_2048_NUM_CELLS, AUDIO_RATE> oscSquare[POLY_VOICES] = {
 #endif
 Phasor<AUDIO_RATE> pulsePhasor[POLY_VOICES];
 
+#if defined(FAST_OSC_USE)
+FastOsc<AUDIO_RATE> lfoPitch;
+FastOsc<AUDIO_RATE> lfoFilter;
+
+namespace {
+struct FastOscInitializer {
+  FastOscInitializer() {
+    for (uint8_t i = 0; i < POLY_VOICES; ++i) {
+      fastOscSin[i].setWave(FastOsc<AUDIO_RATE>::SINE);
+      fastOscTri[i].setWave(FastOsc<AUDIO_RATE>::TRIANGLE);
+      fastOscSaw[i].setWave(FastOsc<AUDIO_RATE>::SAW);
+      fastOscSquare[i].setWave(FastOsc<AUDIO_RATE>::SQUARE);
+    }
+    lfoPitch.setWave(FastOsc<AUDIO_RATE>::SINE);
+    lfoFilter.setWave(FastOsc<AUDIO_RATE>::SINE);
+  }
+};
+
+FastOscInitializer fastOscInitializer;
+}  // namespace
+#else
 Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoPitch(SIN2048_DATA);
 Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoFilter(SIN2048_DATA);
+#endif
 
 ADSR<CONTROL_RATE, AUDIO_RATE> envelopeInstance[POLY_VOICES];
 LowPassFilter filterInstance[POLY_VOICES];
