@@ -2,6 +2,7 @@
 
 #define AUDIO_MODE STANDARD_PLUS
 #define MOZZI_CONTROL_RATE 128
+#define FAST_OSC_USE
 
 // ============================================================================
 //  Input hardware selection

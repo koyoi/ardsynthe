@@ -3,10 +3,10 @@
 #include "sequencer.h"
 #include "synth_state.h"
 
-#define MOZZI_ANALOG_READ_RESOLUTION 12
-
 #include <MozziHeadersOnly.h>
 #include <string.h>
+
+extern float readNormalizedPot(uint8_t pin);
 
 namespace {
 uint8_t lastKeyState[KEY_COUNT];
@@ -37,10 +37,7 @@ uint16_t readTtp229State() {
 }
 #endif
 
-float readNormalizedPot(uint8_t pin) {
-  uint16_t value = mozziAnalogRead(pin);
-  return static_cast<float>(value) / ANALOG_MAX_VALUE;
-}
+
 }
 
 void setupKeyboardExpander() {

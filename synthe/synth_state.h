@@ -14,9 +14,16 @@
 #include <ADSR.h>
 
 #include <tables/sin2048_int8.h>
+#if !defined(FAST_OSC_USE)
 #include <tables/triangle2048_int8.h>
 #include <tables/saw2048_int8.h>
 #include <tables/square_no_alias_2048_int8.h>
+#endif
+
+// Optional lightweight oscillator
+#if defined(FAST_OSC_USE)
+#include "fast_osc.h"
+#endif
 
 struct SynthParams {
   float pitchOffset = 0.0f;
@@ -80,15 +87,27 @@ constexpr uint8_t POLY_VOICES = 4;
 
 // 各ボイスごとのオシレータ/フェーズ/エンベロープ/フィルタは静的確保されます。
 // 各配列の実体は synth_state.cpp に定義されています。
+#if defined(FAST_OSC_USE)
+extern FastOsc<AUDIO_RATE> fastOscSin[POLY_VOICES];
+extern FastOsc<AUDIO_RATE> fastOscTri[POLY_VOICES];
+extern FastOsc<AUDIO_RATE> fastOscSaw[POLY_VOICES];
+extern FastOsc<AUDIO_RATE> fastOscSquare[POLY_VOICES];
+#else
 extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> oscSin[POLY_VOICES];
 extern Oscil<TRIANGLE2048_NUM_CELLS, AUDIO_RATE> oscTri[POLY_VOICES];
 extern Oscil<SAW2048_NUM_CELLS, AUDIO_RATE> oscSaw[POLY_VOICES];
 extern Oscil<SQUARE_NO_ALIAS_2048_NUM_CELLS, AUDIO_RATE> oscSquare[POLY_VOICES];
+#endif
 extern Phasor<AUDIO_RATE> pulsePhasor[POLY_VOICES];
 
 // グローバル LFO（共有）
+#if defined(FAST_OSC_USE)
+extern FastOsc<AUDIO_RATE> lfoPitch;
+extern FastOsc<AUDIO_RATE> lfoFilter;
+#else
 extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoPitch;
 extern Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> lfoFilter;
+#endif
 
 // 各ボイスのエンベロープ/フィルタはポインタで扱う
 extern ADSR<CONTROL_RATE, AUDIO_RATE> envelopeInstance[POLY_VOICES];

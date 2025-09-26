@@ -1,4 +1,5 @@
 #include "config.h"
+#define MOZZI_ANALOG_READ_RESOLUTION 12
 
 #include <Arduino.h>
 #include <Mozzi.h>
@@ -9,6 +10,12 @@
 #include "sequencer.h"
 #include "synth_state.h"
 #include "visualizer.h"
+
+
+float readNormalizedPot(uint8_t pin) {
+  uint16_t value = mozziAnalogRead(pin);
+  return static_cast<float>(value) / ANALOG_MAX_VALUE;
+}
 
 // ============================================================
 //  Synth configuration for STM32F103 (Blue Pill) with Mozzi
